@@ -4,7 +4,9 @@
       "Bash(dir:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(if not exist \"C:\\Users\\ardil\\.claude-worktrees\\VR_Canoe_Multiplayer\\quirky-mendeleev\\Assets\\Scripts\\Player\" mkdir \"C:\\Users\\ardil\\.claude-worktrees\\VR_Canoe_Multiplayer\\quirky-mendeleev\\Assets\\Scripts\\Player\")",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
