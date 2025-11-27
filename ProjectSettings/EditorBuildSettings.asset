@@ -8,4 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/CanoeGameScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 8e1c7feef77e6cd40af1a402080efb82,
+      type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 16501d3d3dcdc0341a8599daf3003d47,
+      type: 2}
