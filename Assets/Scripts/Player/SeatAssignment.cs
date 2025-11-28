@@ -347,6 +347,7 @@ namespace VRCanoe.VRPlayer
         private void OnGUI()
         {
             if (!showDebugInfo || !Application.isPlaying) return;
+            if (UI.DebugUIManager.Instance != null && !UI.DebugUIManager.Instance.ShowSeatAssignmentDebug) return;
 
             GUILayout.BeginArea(new Rect(Screen.width - 280, 200, 270, 150));
             GUILayout.Box("Seat Assignment");

@@ -314,6 +314,7 @@ namespace VRCanoe.Game
         private void OnGUI()
         {
             if (!showDebugInfo || !Application.isPlaying) return;
+            if (UI.DebugUIManager.Instance != null && !UI.DebugUIManager.Instance.ShowScoreDebug) return;
 
             GUILayout.BeginArea(new Rect(Screen.width - 200, 10, 190, 120));
             GUILayout.Box("Score Manager");

@@ -453,6 +453,7 @@ namespace VRCanoe.Game
         private void OnGUI()
         {
             if (!showDebugInfo || !Application.isPlaying) return;
+            if (UI.DebugUIManager.Instance != null && !UI.DebugUIManager.Instance.ShowTimerDebug) return;
 
             GUILayout.BeginArea(new Rect(Screen.width - 200, 140, 190, 100));
             GUILayout.Box("Timer Manager");

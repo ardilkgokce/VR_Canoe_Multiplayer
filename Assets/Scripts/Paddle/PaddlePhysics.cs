@@ -345,6 +345,7 @@ namespace VRCanoe.Paddle
         private void OnGUI()
         {
             if (!showDebugInfo || !Application.isPlaying) return;
+            if (UI.DebugUIManager.Instance != null && !UI.DebugUIManager.Instance.ShowAllDebugUI) return;
 
             GUILayout.BeginArea(new Rect(Screen.width - 250, 10, 240, 180));
             GUILayout.Box("Paddle (2 Tips)");

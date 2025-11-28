@@ -189,6 +189,10 @@ namespace VRCanoe.VRPlayer
         private void OnGUI()
         {
             if (!showDebugInfo || !Application.isPlaying) return;
+            if (Game.CanoeGameManager.Instance != null) // DebugUIManager kullanilabilir
+            {
+                if (UI.DebugUIManager.Instance != null && !UI.DebugUIManager.Instance.ShowPlayerSpawnerDebug) return;
+            }
 
             GUILayout.BeginArea(new Rect(10, 120, 200, 80));
             GUILayout.Box("Player Spawner");

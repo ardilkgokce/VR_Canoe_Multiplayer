@@ -264,6 +264,7 @@ namespace VRCanoe.Canoe
         private void OnGUI()
         {
             if (!Application.isPlaying) return;
+            if (UI.DebugUIManager.Instance != null && !UI.DebugUIManager.Instance.ShowCanoeDebug) return;
 
             // Debug bilgileri
             GUILayout.BeginArea(new Rect(10, 10, 200, 100));
