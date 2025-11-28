@@ -25,6 +25,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 		_DisplaceStrength("Displace Strength", Range( -1 , 1)) = 0
 		[IntRange]_WaveTiling01("Wave Tiling 01", Range( 0 , 50)) = 1
 		[IntRange]_WaveTiling02("Wave Tiling 02", Range( 0 , 50)) = 1
+		_WaveSpeed("Wave Speed", Float) = 0.07
 
 
 		//_TransmissionShadow( "Transmission Shadow", Range( 0, 1 ) ) = 0.5
@@ -366,6 +367,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -462,10 +464,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -683,10 +685,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 				float4 lerpResult22 = lerp( _ColorShallow , _ColorDeep , saturate( distanceDepth18 ));
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord8.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord8.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2D( _Displacement, panner93 ).r + tex2D( _Displacement, panner106 ).r ) ) * _DisplaceStrength );
 				float4 lerpResult102 = lerp( lerpResult22 , ( lerpResult22 + float4( 0.5,0.5,0.5,0 ) ) , vDisplacement123);
 				float4 vColorWaves122 = lerpResult102;
@@ -1093,6 +1095,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -1139,10 +1142,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -1449,6 +1452,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -1492,10 +1496,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -1771,6 +1775,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -1866,10 +1871,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.texcoord0.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.texcoord0.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -2058,10 +2063,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 				float4 lerpResult22 = lerp( _ColorShallow , _ColorDeep , saturate( distanceDepth18 ));
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord5.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord5.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2D( _Displacement, panner93 ).r + tex2D( _Displacement, panner106 ).r ) ) * _DisplaceStrength );
 				float4 lerpResult102 = lerp( lerpResult22 , ( lerpResult22 + float4( 0.5,0.5,0.5,0 ) ) , vDisplacement123);
 				float4 vColorWaves122 = lerpResult102;
@@ -2227,6 +2232,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -2322,10 +2328,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -2496,10 +2502,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 				float4 lerpResult22 = lerp( _ColorShallow , _ColorDeep , saturate( distanceDepth18 ));
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord3.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord3.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2D( _Displacement, panner93 ).r + tex2D( _Displacement, panner106 ).r ) ) * _DisplaceStrength );
 				float4 lerpResult102 = lerp( lerpResult22 , ( lerpResult22 + float4( 0.5,0.5,0.5,0 ) ) , vDisplacement123);
 				float4 vColorWaves122 = lerpResult102;
@@ -2685,6 +2691,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -2729,10 +2736,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -2895,12 +2902,12 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord5.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float3 unpack94 = UnpackNormalScale( tex2D( _WaveNormal, panner93 ), _WaveNormalIntensity );
 				unpack94.z = lerp( 1, unpack94.z, saturate(_WaveNormalIntensity) );
 				float2 temp_cast_2 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord5.xy * temp_cast_2 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float3 unpack109 = UnpackNormalScale( tex2D( _WaveNormal, panner106 ), _WaveNormalIntensity );
 				unpack109.z = lerp( 1, unpack109.z, saturate(_WaveNormalIntensity) );
 				float3 vNormal90 = BlendNormal( unpack94 , unpack109 );
@@ -3133,6 +3140,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -3231,10 +3239,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -3451,10 +3459,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 				float4 lerpResult22 = lerp( _ColorShallow , _ColorDeep , saturate( distanceDepth18 ));
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord8.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord8.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2D( _Displacement, panner93 ).r + tex2D( _Displacement, panner106 ).r ) ) * _DisplaceStrength );
 				float4 lerpResult102 = lerp( lerpResult22 , ( lerpResult22 + float4( 0.5,0.5,0.5,0 ) ) , vDisplacement123);
 				float4 vColorWaves122 = lerpResult102;
@@ -3712,6 +3720,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -3763,10 +3772,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );
@@ -4012,6 +4021,7 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 			float _WaveNormalIntensity;
 			float _Smoothness;
 			float _Opacity;
+			float _WaveSpeed;
 			#ifdef ASE_TRANSMISSION
 				float _TransmissionShadow;
 			#endif
@@ -4063,10 +4073,10 @@ Shader "Polyart/Dreamscape/URP/Water Lake"
 
 				float2 temp_cast_0 = (_WaveTiling01).xx;
 				float2 texCoord91 = input.ase_texcoord.xy * temp_cast_0 + float2( 0,0 );
-				float2 panner93 = ( 1.0 * _Time.y * float2( 0.07,0.07 ) + texCoord91);
+				float2 panner93 = ( 1.0 * _Time.y * float2( _WaveSpeed, _WaveSpeed ) + texCoord91);
 				float2 temp_cast_1 = (_WaveTiling02).xx;
 				float2 texCoord105 = input.ase_texcoord.xy * temp_cast_1 + float2( 0,0 );
-				float2 panner106 = ( 1.0 * _Time.y * float2( -0.07,-0.07 ) + texCoord105);
+				float2 panner106 = ( 1.0 * _Time.y * float2( -_WaveSpeed, -_WaveSpeed ) + texCoord105);
 				float vDisplacement123 = ( saturate( ( tex2Dlod( _Displacement, float4( panner93, 0, 0.0) ).r + tex2Dlod( _Displacement, float4( panner106, 0, 0.0) ).r ) ) * _DisplaceStrength );
 				float3 temp_cast_2 = (vDisplacement123).xxx;
 				float3 ase_positionWS = TransformObjectToWorld( (input.positionOS).xyz );

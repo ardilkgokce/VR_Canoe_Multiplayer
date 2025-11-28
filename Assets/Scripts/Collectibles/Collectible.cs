@@ -91,18 +91,19 @@ namespace VRCanoe.Collectibles
 
         private void Start()
         {
-            // GameManager eventlerini dinle
-            if (CanoeGameManager.Instance != null)
+            // CollectibleManager'a kayit ol
+            if (CollectibleManager.Instance != null)
             {
-                CanoeGameManager.Instance.OnGameReset += OnGameReset;
+                CollectibleManager.Instance.RegisterCollectible(this);
             }
         }
 
         private void OnDestroy()
         {
-            if (CanoeGameManager.Instance != null)
+            // CollectibleManager'dan kaydi kaldir
+            if (CollectibleManager.Instance != null)
             {
-                CanoeGameManager.Instance.OnGameReset -= OnGameReset;
+                CollectibleManager.Instance.UnregisterCollectible(this);
             }
         }
 
@@ -189,20 +190,11 @@ namespace VRCanoe.Collectibles
         {
             _isCollected = true;
 
-            // Gorunurlugu kapat
-            if (_meshRenderer != null)
-            {
-                _meshRenderer.enabled = false;
-            }
-
-            // Collider'i kapat
-            if (_collider != null)
-            {
-                _collider.enabled = false;
-            }
-
-            // Efektleri oynat
+            // Efektleri oynat (obje kapanmadan once)
             PlayEffects();
+
+            // Objeyi kapat
+            gameObject.SetActive(false);
 
             if (showDebugInfo)
             {
@@ -233,31 +225,14 @@ namespace VRCanoe.Collectibles
         }
 
         /// <summary>
-        /// Oyun resetlendiginde collectible'i geri getir.
-        /// </summary>
-        private void OnGameReset()
-        {
-            Reset();
-        }
-
-        /// <summary>
-        /// Collectible'i sifirla.
+        /// Collectible'i sifirla (CollectibleManager tarafindan cagirilir).
         /// </summary>
         public void Reset()
         {
             _isCollected = false;
 
-            // Gorunurlugu ac
-            if (_meshRenderer != null)
-            {
-                _meshRenderer.enabled = true;
-            }
-
-            // Collider'i ac
-            if (_collider != null)
-            {
-                _collider.enabled = true;
-            }
+            // Objeyi ac
+            gameObject.SetActive(true);
 
             // Efekti gizle
             if (collectEffect != null)
