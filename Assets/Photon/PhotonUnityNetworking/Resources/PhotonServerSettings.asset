@@ -46,6 +46,15 @@ MonoBehaviour:
   - RPC_SetState
   - RPC_Teleport
   - RPC_AddPaddleForce
+  - RPC_OnCoinCollected
+  - RPC_RequestAddCoin
+  - RPC_RequestAddSyncBonus
+  - RPC_RequestResetScores
+  - RPC_SyncScores
+  - RPC_CountdownFinished
+  - RPC_OnGameFinished
+  - RPC_OnTimeUp
+  - RPC_SyncTimer
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

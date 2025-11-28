@@ -9,6 +9,7 @@ namespace VRCanoe.Game
 {
     /// <summary>
     /// Oyun state yonetimi. MasterClient tum state gecislerini kontrol eder.
+    /// TimerManager ve ScoreManager ile birlikte calisir.
     /// </summary>
     public class CanoeGameManager : MonoBehaviourPunCallbacks
     {
@@ -16,25 +17,24 @@ namespace VRCanoe.Game
 
         [Header("Ayarlar")]
         [SerializeField] private GameSettings gameSettings;
-        [SerializeField] private float countdownDuration = 3f;
+
+        [Header("Debug")]
+        [SerializeField] private bool showDebugInfo = true;
 
         // Events
         public event Action<GameState> OnGameStateChanged;
         public event Action OnGameReset;
         public event Action<int> OnCountdownTick; // 3, 2, 1, 0 (GO!)
+        public event Action OnGameFinished;
 
         // Properties
         public GameState CurrentState { get; private set; } = GameState.WaitingForPlayers;
         public GameSettings Settings => gameSettings;
-        public float RemainingTime { get; private set; }
+        public float RemainingTime => TimerManager.Instance != null ? TimerManager.Instance.RemainingTime : 0f;
         public bool IsPlaying => CurrentState == GameState.Playing;
 
         // Room property key
         private const string GAME_STATE_KEY = "GameState";
-
-        // Countdown
-        private float _countdownTimer;
-        private int _lastCountdownValue;
 
         private void Awake()
         {
@@ -56,6 +56,17 @@ namespace VRCanoe.Game
                 NetworkManager.Instance.OnPlayerLeftEvent += OnPlayerCountChanged;
                 NetworkManager.Instance.OnJoinedRoomEvent += OnNetworkJoinedRoom;
             }
+
+            // TimerManager eventlerini dinle
+            if (TimerManager.Instance != null)
+            {
+                TimerManager.Instance.OnCountdownTick += HandleCountdownTick;
+                TimerManager.Instance.OnCountdownFinished += HandleCountdownFinished;
+                TimerManager.Instance.OnTimeUp += HandleTimeUp;
+            }
+
+            // FinishLine eventini dinle
+            FinishLine.OnFinishLineCrossed += HandleFinishLineCrossed;
         }
 
         private void OnDestroy()
@@ -66,14 +77,61 @@ namespace VRCanoe.Game
                 NetworkManager.Instance.OnPlayerLeftEvent -= OnPlayerCountChanged;
                 NetworkManager.Instance.OnJoinedRoomEvent -= OnNetworkJoinedRoom;
             }
+
+            if (TimerManager.Instance != null)
+            {
+                TimerManager.Instance.OnCountdownTick -= HandleCountdownTick;
+                TimerManager.Instance.OnCountdownFinished -= HandleCountdownFinished;
+                TimerManager.Instance.OnTimeUp -= HandleTimeUp;
+            }
+
+            FinishLine.OnFinishLineCrossed -= HandleFinishLineCrossed;
         }
 
         private void Update()
         {
             HandleKeyboardShortcuts();
-            UpdateCountdown();
-            UpdateGameTimer();
         }
+
+        #region Timer Events
+
+        private void HandleCountdownTick(int value)
+        {
+            OnCountdownTick?.Invoke(value);
+        }
+
+        private void HandleCountdownFinished()
+        {
+            // GO! - Oyunu baslat
+            if (PhotonNetwork.IsMasterClient)
+            {
+                StartGame();
+            }
+        }
+
+        private void HandleTimeUp()
+        {
+            // Sure bitti - Oyunu bitir
+            if (PhotonNetwork.IsMasterClient)
+            {
+                if (showDebugInfo)
+                {
+                    Debug.Log("[CanoeGameManager] Sure bitti!");
+                }
+                FinishGame();
+            }
+        }
+
+        private void HandleFinishLineCrossed(float finishTime)
+        {
+            if (showDebugInfo)
+            {
+                Debug.Log($"[CanoeGameManager] Bitis cizgisi gecildi: {finishTime:F2}s");
+            }
+            // FinishLine zaten FinishGame cagiriyor
+        }
+
+        #endregion
 
         #region Keyboard Shortcuts
 
@@ -158,9 +216,8 @@ namespace VRCanoe.Game
             if (!PhotonNetwork.IsMasterClient) return;
             if (CurrentState != GameState.Ready) return;
 
-            _countdownTimer = countdownDuration;
-            _lastCountdownValue = Mathf.CeilToInt(countdownDuration);
             SetState(GameState.Countdown);
+            // TimerManager OnGameStateChanged event'ini dinleyerek countdown'u baslatacak
         }
 
         /// <summary>
@@ -190,8 +247,8 @@ namespace VRCanoe.Game
         {
             if (!PhotonNetwork.IsMasterClient) return;
 
-            RemainingTime = gameSettings != null ? gameSettings.gameDuration : 60f;
             SetState(GameState.Playing);
+            // TimerManager OnGameStateChanged event'ini dinleyerek timer'i baslatacak
         }
 
         /// <summary>
@@ -203,6 +260,15 @@ namespace VRCanoe.Game
             if (CurrentState != GameState.Playing) return;
 
             SetState(GameState.Finished);
+
+            // Final skoru logla
+            if (showDebugInfo && ScoreManager.Instance != null)
+            {
+                Debug.Log($"[CanoeGameManager] Oyun bitti! Toplam Skor: {ScoreManager.Instance.TotalScore}");
+            }
+
+            // Event firlat
+            photonView.RPC(nameof(RPC_OnGameFinished), RpcTarget.All);
         }
 
         /// <summary>
@@ -233,13 +299,24 @@ namespace VRCanoe.Game
                 return;
             }
 
-            Debug.Log("[CanoeGameManager] Oyun resetleniyor...");
+            if (showDebugInfo)
+            {
+                Debug.Log("[CanoeGameManager] Oyun resetleniyor...");
+            }
 
-            // State'i sifirla
-            RemainingTime = 0f;
-            _countdownTimer = 0f;
+            // Timer'i sifirla
+            if (TimerManager.Instance != null)
+            {
+                TimerManager.Instance.ResetTimer();
+            }
 
-            // Reset event'i firlat (skorlar, pozisyonlar vs. resetlensin)
+            // Skorlari sifirla
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.ResetScores();
+            }
+
+            // Reset event'i firlat (pozisyonlar, coinler vs. resetlensin)
             photonView.RPC(nameof(RPC_OnGameReset), RpcTarget.All);
 
             // WaitingForPlayers'a don
@@ -269,18 +346,20 @@ namespace VRCanoe.Game
         private void RPC_SetState(int stateValue)
         {
             GameState newState = (GameState)stateValue;
-            GameState oldState = CurrentState;
             CurrentState = newState;
 
-            Debug.Log($"[CanoeGameManager] State guncellendi: {newState}");
-            OnGameStateChanged?.Invoke(newState);
-
-            // State'e ozel islemler
-            if (newState == GameState.Countdown && oldState != GameState.Countdown)
+            if (showDebugInfo)
             {
-                _countdownTimer = countdownDuration;
-                _lastCountdownValue = Mathf.CeilToInt(countdownDuration);
+                Debug.Log($"[CanoeGameManager] State guncellendi: {newState}");
             }
+
+            OnGameStateChanged?.Invoke(newState);
+        }
+
+        [PunRPC]
+        private void RPC_OnGameFinished()
+        {
+            OnGameFinished?.Invoke();
         }
 
         [PunRPC]
@@ -305,56 +384,6 @@ namespace VRCanoe.Game
             if (PhotonNetwork.IsMasterClient)
             {
                 ResetGame();
-            }
-        }
-
-        [PunRPC]
-        private void RPC_CountdownTick(int value)
-        {
-            OnCountdownTick?.Invoke(value);
-        }
-
-        #endregion
-
-        #region Timers
-
-        private void UpdateCountdown()
-        {
-            if (CurrentState != GameState.Countdown) return;
-            if (!PhotonNetwork.IsMasterClient) return;
-
-            _countdownTimer -= Time.deltaTime;
-            int currentValue = Mathf.CeilToInt(_countdownTimer);
-
-            // Her saniye tick gonder
-            if (currentValue != _lastCountdownValue && currentValue >= 0)
-            {
-                _lastCountdownValue = currentValue;
-                photonView.RPC(nameof(RPC_CountdownTick), RpcTarget.All, currentValue);
-            }
-
-            // Countdown bitti
-            if (_countdownTimer <= 0f)
-            {
-                StartGame();
-            }
-        }
-
-        private void UpdateGameTimer()
-        {
-            if (CurrentState != GameState.Playing) return;
-            if (!PhotonNetwork.IsMasterClient) return;
-
-            RemainingTime -= Time.deltaTime;
-
-            // Sync remaining time periodically (her saniye)
-            // Basit tutmak icin su an sadece MasterClient'ta tutuluyor
-            // Gerekirse RPC ile senkronize edilebilir
-
-            if (RemainingTime <= 0f)
-            {
-                RemainingTime = 0f;
-                FinishGame();
             }
         }
 
