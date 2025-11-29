@@ -56,6 +56,8 @@ MonoBehaviour:
   - RPC_OnTimeUp
   - RPC_SyncTimer
   - RPC_OnCollected
+  - RPC_RequestStartGame
+  - RPC_SetNames
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

@@ -115,7 +115,7 @@ Material:
     - _FoamCutoff: 0.77
     - _FoamDepthFade: 0.18
     - _FoamScale: 25
-    - _FoamSpeed: -0.13
+    - _FoamSpeed: -0.84
     - _Metallic: 0
     - _NormalIntensity: 0.178
     - _Opacity: 0.924

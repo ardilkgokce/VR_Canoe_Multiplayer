@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f1f74b8313e2244680cdd33de6f97db, type: 3}
   m_Name: GameSettings
   m_EditorClassIdentifier: 
-  gameDuration: 60
+  gameDuration: 240
   coinValue: 10
   canoeSpeedMultiplier: 1
   syncPaddleMultiplier: 1.5

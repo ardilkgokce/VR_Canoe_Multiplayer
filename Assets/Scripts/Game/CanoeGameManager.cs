@@ -190,11 +190,19 @@ namespace VRCanoe.Game
             // 2 oyuncu gerekli
             if (NetworkManager.Instance == null || !NetworkManager.Instance.AllPlayersReady)
             {
-                Debug.LogWarning("[CanoeGameManager] 2 oyuncu gerekli!");
+                if (showDebugInfo)
+                {
+                    Debug.LogWarning("[CanoeGameManager] 2 oyuncu gerekli!");
+                }
                 return;
             }
 
             SetState(GameState.EnteringNames);
+
+            if (showDebugInfo)
+            {
+                Debug.Log("[CanoeGameManager] Isim girisi basladi");
+            }
         }
 
         /// <summary>
@@ -206,6 +214,11 @@ namespace VRCanoe.Game
             if (CurrentState != GameState.EnteringNames) return;
 
             SetState(GameState.Ready);
+
+            if (showDebugInfo)
+            {
+                Debug.Log("[CanoeGameManager] Isimler onaylandi, Ready state");
+            }
         }
 
         /// <summary>
