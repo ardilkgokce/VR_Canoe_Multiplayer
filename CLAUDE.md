@@ -29,7 +29,8 @@ Assets/
 │   ├── Game/           # GameManager, skor, state management
 │   ├── UI/             # Scoreboard, isim girisi, izleyici UI
 │   ├── Spectator/      # Izleyici kamera sistemi
-│   └── Collectibles/   # Coin sistemi
+│   ├── Collectibles/   # Coin sistemi
+│   └── VRPlayer/       # VR rig, seat assignment
 ├── Prefabs/
 │   ├── Network/        # Network prefablar (PhotonView)
 │   ├── Player/         # VR oyuncu, kurekler
@@ -44,67 +45,125 @@ Assets/
 └── Settings/           # URP ayarlari
 ```
 
-## GameSettings
-
-`Assets/ScriptableObjects/GameSettings.asset` dosyasi:
-
-| Ayar | Default | Aciklama |
-|------|---------|----------|
-| gameDuration | 60s | Oyun suresi |
-| coinValue | 10 | Coin puan degeri |
-| canoeSpeedMultiplier | 1.0 | Hiz carpani |
-| syncPaddleMultiplier | 1.5 | Senkronize kurek bonusu |
-| finishLineDistance | 500m | Bitis mesafesi |
-
-## Namespace
+## Namespace Yapisi
 
 Tum scriptler `VRCanoe` namespace altinda:
-- `VRCanoe.Network`
-- `VRCanoe.Canoe`
-- `VRCanoe.Paddle`
-- `VRCanoe.Game`
-- `VRCanoe.UI`
-- `VRCanoe.Spectator`
-- `VRCanoe.Collectibles`
+- `VRCanoe.Network` - NetworkManager, PhotonCallbacks
+- `VRCanoe.Canoe` - CanoeMovement, CanoePhysics
+- `VRCanoe.Paddle` - PaddleController, PaddlePhysics
+- `VRCanoe.Game` - CanoeGameManager, ScoreManager, TimerManager, NameManager, ScoreboardManager
+- `VRCanoe.UI` - WorldSpaceScoreboard, CongratulationsDisplay, NameEntryUI, DebugUIManager
+- `VRCanoe.Spectator` - SpectatorCamera
+- `VRCanoe.Collectibles` - Collectible, CollectibleManager
+- `VRCanoe.VRPlayer` - PlayerSpawner, SeatAssignment (NOT: VRCanoe.Player degil, Photon conflict)
 
-## Key Technologies
+## Onemli Manager'lar
 
-| Package | Purpose |
-|---------|---------|
-| Photon PUN2 | Multiplayer networking |
-| XR Interaction Toolkit | VR input ve interaction |
-| URP 14.0.12 | Rendering |
-| TextMeshPro | UI text |
+### CanoeGameManager
+- GameState yonetimi (WaitingForPlayers, EnteringNames, Countdown, Playing, Finished)
+- Events: OnGameStateChanged, OnGameStarted, OnGameFinished, OnGameReset
 
-## Oyun Akisi
+### ScoreManager
+- Coin toplama, sync bonus, time bonus
+- Photon Room Properties ile senkronize
+- PhotonView gerekli
 
-```
-MainMenu -> Photon Connect -> Lobby -> Ready -> Game -> Finish -> Results
-```
+### TimerManager
+- Countdown ve oyun suresi
+- Events: OnCountdownTick, OnCountdownFinished, OnTimeUp
+- PhotonView gerekli
+
+### NameManager
+- Oyuncu ve takim isimleri
+- Photon Room Properties ile senkronize
+- Events: OnNamesChanged, OnNamesConfirmed
+
+### ScoreboardManager
+- JSON dosyasina tum skorlari kaydeder
+- Top 10 gosterimi
+- Photon RPC ile senkronize (oyun bitiminde)
+- PhotonView gerekli
+
+### CollectibleManager
+- Tum collectible'lari takip eder
+- Reset fonksiyonu
+
+### DebugUIManager
+- F12 ile debug UI toggle
+- Inspector'dan kontrol
 
 ## Network Mimarisi
 
-- Master Client: Oyun state, timer, spawn yonetimi
+- Master Client: Oyun state, timer, fizik hesaplamalari
 - Clients: Input gonderme, interpolasyon
-- Senkronizasyon: Transform, Rigidbody, Custom properties
+- Senkronizasyon:
+  - Room Properties: GameState, Score, Timer, Names
+  - RPC: Collectible toplama, skor ekleme
+  - PhotonView: Transform, Rigidbody
 
 ## VR Setup
 
 - XR Origin ile oyuncu tracking
+- Scene-based VR players (kanoya child olarak yerlestirilmis)
 - Controller-based paddle input
-- World Space UI
-- Comfort settings
+- World Space UI (Scoreboard, Congratulations)
+
+## PhotonView Gereken Objeler
+
+- CanoeGameManager
+- ScoreManager
+- TimerManager
+- ScoreboardManager
+- Collectible (her biri)
+- Canoe
+
+## UI Sistemleri
+
+### WorldSpaceScoreboard
+- 10 TeamName text + 10 Points text (Inspector'dan atanir)
+- # (siralama) elle yazilir
+- Oyun bitiminde otomatik gosterilir
+
+### CongratulationsDisplay
+- Ayri text'ler veya tek combined text
+- High score vurgulama
+- Oyun bitiminde otomatik gosterilir
+
+### NameEntryUI
+- Player1, Player2, Team isim girisi
+- MasterClient veya Player1 duzenleyebilir
+
+## JSON Kayit
+
+Skorlar `Application.persistentDataPath/scoreboard.json` dosyasina kaydedilir.
+Tum oyuncu skorlari saklanir, sadece top 10 gosterilir.
 
 ## Coding Standards
 
 ```csharp
 namespace VRCanoe.Game
 {
-    public class GameManager : MonoBehaviourPunCallbacks
+    public class ExampleManager : MonoBehaviourPunCallbacks
     {
+        public static ExampleManager Instance { get; private set; }
+
+        [Header("Settings")]
         [SerializeField] private GameSettings settings;
 
-        private void Start() { }
+        [Header("Debug")]
+        [SerializeField] private bool showDebugInfo = true;
+
+        public event Action OnSomethingHappened;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
     }
 }
 ```
