@@ -135,6 +135,7 @@ namespace VRCanoe.Network
             int count = 0;
             foreach (Player player in PhotonNetwork.PlayerList)
             {
+                // Sadece aktif oyunculari say (PlayerList zaten sadece aktif oyunculari icerir)
                 if (player.CustomProperties.TryGetValue(PLAYER_TYPE_KEY, out object typeObj))
                 {
                     PlayerType type = (PlayerType)(int)typeObj;
@@ -144,7 +145,9 @@ namespace VRCanoe.Network
                     }
                 }
             }
-            return count;
+
+            // Maksimum 2 oyuncu olabilir - guvenlik kontrolu
+            return Mathf.Min(count, 2);
         }
 
         private int GetSpectatorCount()
@@ -207,9 +210,51 @@ namespace VRCanoe.Network
             Debug.Log($"[NetworkManager] Oyuncu sayisi: {PhotonNetwork.CurrentRoom.PlayerCount}");
 
             SetState(ConnectionState.InRoom);
-            SetPlayerTypeProperty();
+
+            // Oyuncu tipini dinamik olarak ata (bos slot bul)
+            AssignPlayerTypeAutomatically();
 
             OnJoinedRoomEvent?.Invoke();
+        }
+
+        /// <summary>
+        /// Oyuncu tipini otomatik olarak ata (bos slota).
+        /// </summary>
+        private void AssignPlayerTypeAutomatically()
+        {
+            bool player1Taken = false;
+            bool player2Taken = false;
+
+            // Diger oyuncularin tiplerini kontrol et
+            foreach (Player player in PhotonNetwork.PlayerList)
+            {
+                // Kendimizi atlayalim
+                if (player.ActorNumber == PhotonNetwork.LocalPlayer.ActorNumber) continue;
+
+                if (player.CustomProperties.TryGetValue(PLAYER_TYPE_KEY, out object typeObj))
+                {
+                    PlayerType type = (PlayerType)(int)typeObj;
+                    if (type == PlayerType.Player1) player1Taken = true;
+                    else if (type == PlayerType.Player2) player2Taken = true;
+                }
+            }
+
+            // Bos slotu bul ve ata
+            if (!player1Taken)
+            {
+                playerType = PlayerType.Player1;
+            }
+            else if (!player2Taken)
+            {
+                playerType = PlayerType.Player2;
+            }
+            else
+            {
+                playerType = PlayerType.Spectator;
+            }
+
+            Debug.Log($"[NetworkManager] Oyuncu tipi atandi: {playerType}");
+            SetPlayerTypeProperty();
         }
 
         public override void OnJoinRoomFailed(short returnCode, string message)
@@ -253,7 +298,12 @@ namespace VRCanoe.Network
             // Oyuncu tipi degistiginde UI guncellensin
             if (changedProps.ContainsKey(PLAYER_TYPE_KEY))
             {
-                Debug.Log($"[NetworkManager] Oyuncu tipi guncellendi: {targetPlayer.NickName}");
+                Debug.Log($"[NetworkManager] Oyuncu tipi guncellendi: {targetPlayer.NickName} -> {GetPlayerType(targetPlayer)}");
+                Debug.Log($"[NetworkManager] Guncel oyuncu sayisi: {PlayerCount}");
+
+                // ConnectionUI gibi dinleyicilerin guncellenmesi icin event tetikle
+                // OnPlayerJoinedEvent ile ayni handler'lari calistirir
+                OnConnectionStateChanged?.Invoke(CurrentState);
             }
         }
 

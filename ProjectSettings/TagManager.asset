@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Boundary
   - Canoe
+  - Bullet
+  - Missile
   layers:
   - Default
   - TransparentFX
@@ -13,8 +15,8 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
+  - Player1UI
+  - Player2UI
   - 
   - 
   - 

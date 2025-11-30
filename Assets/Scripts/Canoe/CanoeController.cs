@@ -94,14 +94,13 @@ namespace VRCanoe.Canoe
 
             Debug.Log("[CanoeController] Kano resetleniyor...");
 
-            // PositionSync uzerinden teleport (tum clientlarda)
+            // Once local rigidbody'yi resetle
+            ResetPosition(_startPosition, _startRotation);
+
+            // Sonra tum clientlara teleport gonder
             if (_positionSync != null)
             {
                 _positionSync.Teleport(_startPosition, _startRotation);
-            }
-            else
-            {
-                ResetPosition(_startPosition, _startRotation);
             }
         }
 

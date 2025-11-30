@@ -166,19 +166,27 @@ namespace VRCanoe.Canoe
         [PunRPC]
         public void RPC_Teleport(Vector3 position, Quaternion rotation)
         {
+            Debug.Log($"[CanoePositionSync] RPC_Teleport alindi - IsMaster: {PhotonNetwork.IsMasterClient}");
+
             _networkPosition = position;
             _networkRotation = rotation;
             _networkVelocity = Vector3.zero;
             _networkAngularVelocity = Vector3.zero;
 
-            transform.position = position;
-            transform.rotation = rotation;
+            bool wasKinematic = _rigidbody.isKinematic;
 
-            if (!_rigidbody.isKinematic)
+            // Velocity'leri once sifirla (kinematic degilken)
+            if (!wasKinematic)
             {
                 _rigidbody.velocity = Vector3.zero;
                 _rigidbody.angularVelocity = Vector3.zero;
             }
+
+            // Gecici kinematic yap, pozisyon set et, geri al
+            _rigidbody.isKinematic = true;
+            transform.position = position;
+            transform.rotation = rotation;
+            _rigidbody.isKinematic = wasKinematic;
         }
 
         /// <summary>

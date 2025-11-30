@@ -15,10 +15,13 @@ namespace VRCanoe.Paddle
     {
         [Header("Interpolasyon Ayarlari")]
         [Tooltip("Pozisyon interpolasyon hizi")]
-        [SerializeField] private float positionLerpSpeed = 15f;
+        [SerializeField] private float positionLerpSpeed = 25f;
 
         [Tooltip("Rotasyon interpolasyon hizi")]
-        [SerializeField] private float rotationLerpSpeed = 15f;
+        [SerializeField] private float rotationLerpSpeed = 25f;
+
+        [Tooltip("Pozisyon snap mesafesi (bu mesafeden uzaksa direkt snap)")]
+        [SerializeField] private float positionSnapThreshold = 1f;
 
         [Header("Sahiplik")]
         [Tooltip("Bu kurek hangi oyuncuya ait? (Player1 = 0, Player2 = 1)")]
@@ -50,9 +53,33 @@ namespace VRCanoe.Paddle
 
         private void Start()
         {
-            DetermineOwnership();
             InitializeNetworkState();
-            _isInitialized = true;
+
+            // NetworkManager hazirsa hemen belirle, degilse event bekle
+            if (NetworkManager.Instance != null && PhotonNetwork.InRoom)
+            {
+                // Kucuk gecikme - CustomProperties'in gelmesi icin
+                Invoke(nameof(DetermineOwnership), 0.3f);
+            }
+
+            // Player properties guncellendiginde yeniden kontrol et
+            // Bu onemli cunku AssignPlayerTypeAutomatically() room'a katildiktan sonra calisir
+        }
+
+        public override void OnPlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
+        {
+            // Kendi property'miz guncellendiyse ownership'i yeniden belirle
+            if (targetPlayer == PhotonNetwork.LocalPlayer && !_isInitialized)
+            {
+                DetermineOwnership();
+                _isInitialized = true;
+            }
+        }
+
+        public override void OnJoinedRoom()
+        {
+            // Room'a katildiginda kucuk gecikme ile ownership belirle
+            Invoke(nameof(DetermineOwnership), 0.3f);
         }
 
         /// <summary>
@@ -60,10 +87,15 @@ namespace VRCanoe.Paddle
         /// </summary>
         private void DetermineOwnership()
         {
+            // Zaten belirlenmisse tekrar yapma
+            if (_isInitialized) return;
+
             if (NetworkManager.Instance == null)
             {
                 // Offline mod - her zaman local
                 _isLocalPaddle = true;
+                _isInitialized = true;
+                Debug.Log($"[PaddleSync] Offline mod - Owner: {ownerPlayerIndex}, Local: true");
                 return;
             }
 
@@ -92,7 +124,17 @@ namespace VRCanoe.Paddle
                 if (_paddlePhysics != null)
                     _paddlePhysics.enabled = false;
             }
+            else
+            {
+                // Local ise fizik ve controller'i aktif tut
+                if (_paddleController != null)
+                    _paddleController.enabled = true;
 
+                if (_paddlePhysics != null)
+                    _paddlePhysics.enabled = true;
+            }
+
+            _isInitialized = true;
             Debug.Log($"[PaddleSync] Owner: {ownerPlayerIndex}, Local: {_isLocalPaddle}, PlayerType: {localType}");
         }
 
@@ -120,16 +162,42 @@ namespace VRCanoe.Paddle
         /// </summary>
         private void ApplyInterpolation()
         {
-            transform.position = Vector3.Lerp(transform.position, _networkPosition, positionLerpSpeed * Time.deltaTime);
-            transform.rotation = Quaternion.Slerp(transform.rotation, _networkRotation, rotationLerpSpeed * Time.deltaTime);
+            // Cok uzaktaysa direkt snap yap (teleport durumu)
+            float distance = Vector3.Distance(transform.position, _networkPosition);
+            if (distance > positionSnapThreshold)
+            {
+                transform.position = _networkPosition;
+                transform.rotation = _networkRotation;
+                return;
+            }
+
+            // Yumusak interpolasyon
+            float lerpFactor = 1f - Mathf.Exp(-positionLerpSpeed * Time.deltaTime);
+            transform.position = Vector3.Lerp(transform.position, _networkPosition, lerpFactor);
+
+            float rotLerpFactor = 1f - Mathf.Exp(-rotationLerpSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, _networkRotation, rotLerpFactor);
         }
 
         #region IPunObservable
 
         public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
         {
+            // ONEMLI: _isLocalPaddle kontrolu yapiyoruz, stream.IsWriting PhotonView owner'a bagli
+            // Eger bu paddle local degilse, veri gondermemeli
             if (stream.IsWriting)
             {
+                // Sadece local paddle veri gonderebilir
+                if (!_isLocalPaddle)
+                {
+                    // Bu durumda olmamali ama guvenlik icin
+                    stream.SendNext(transform.position);
+                    stream.SendNext(transform.rotation);
+                    stream.SendNext(false);
+                    stream.SendNext(false);
+                    return;
+                }
+
                 // Local paddle - veri gonder
                 stream.SendNext(transform.position);
                 stream.SendNext(transform.rotation);
