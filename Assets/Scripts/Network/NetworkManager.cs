@@ -25,6 +25,7 @@ namespace VRCanoe.Network
     /// Photon PUN2 baglanti yonetimi.
     /// Oyun acildiginda otomatik baglanir ve sabit room'a katilir.
     /// </summary>
+    [DefaultExecutionOrder(-100)] // PhotonView'dan once calissin
     public class NetworkManager : MonoBehaviourPunCallbacks
     {
         public static NetworkManager Instance { get; private set; }
@@ -57,7 +58,9 @@ namespace VRCanoe.Network
         {
             if (Instance != null && Instance != this)
             {
-                Destroy(gameObject);
+                // Sahne yenilendi, eski NetworkManager zaten var
+                // PhotonView duplicate hatasini onlemek icin hemen yok et
+                DestroyImmediate(gameObject);
                 return;
             }
 
@@ -75,6 +78,18 @@ namespace VRCanoe.Network
         /// </summary>
         public void Connect()
         {
+            // Zaten room'daysak bir sey yapma (sahne yenilendi)
+            if (PhotonNetwork.InRoom)
+            {
+                Debug.Log("[NetworkManager] Zaten room'da, yeniden baglanmaya gerek yok");
+                SetState(ConnectionState.InRoom);
+
+                // PlayerType'i yeniden set et (sahne yenilendi, sahne objeleri yeniden olusturuldu)
+                SetPlayerTypeProperty();
+                OnJoinedRoomEvent?.Invoke();
+                return;
+            }
+
             if (PhotonNetwork.IsConnected)
             {
                 Debug.Log("[NetworkManager] Zaten bagli, room'a katiliniyor...");

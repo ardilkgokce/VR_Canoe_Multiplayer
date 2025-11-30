@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine.SceneManagement;
 using VRCanoe.Network;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 
@@ -155,6 +156,10 @@ namespace VRCanoe.Game
             else if (Input.GetKeyDown(KeyCode.F9))
             {
                 EmergencyStop();
+            }
+            else if (Input.GetKeyDown(KeyCode.R))
+            {
+                ReloadSceneForAll();
             }
         }
 
@@ -398,6 +403,25 @@ namespace VRCanoe.Game
             {
                 ResetGame();
             }
+        }
+
+        /// <summary>
+        /// Tum clientlarda sahneyi yeniden yukle (R tusu).
+        /// MasterClient degismez.
+        /// </summary>
+        public void ReloadSceneForAll()
+        {
+            if (!PhotonNetwork.IsMasterClient)
+            {
+                Debug.LogWarning("[CanoeGameManager] Sadece MasterClient sahne yenileyebilir!");
+                return;
+            }
+
+            Debug.LogWarning("[CanoeGameManager] TUM CLIENTLARDA SAHNE YENILENIYOR!");
+
+            // PhotonNetwork.LoadLevel kullan - tum clientlar otomatik sync olur
+            // (AutomaticallySyncScene = true ayarli)
+            PhotonNetwork.LoadLevel(SceneManager.GetActiveScene().buildIndex);
         }
 
         #endregion
