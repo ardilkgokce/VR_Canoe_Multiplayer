@@ -5,9 +5,10 @@ using VRCanoe.Network;
 namespace VRCanoe.VRPlayer
 {
     /// <summary>
-    /// Oyuncu room'a girdiginde PlayerType'a gore VR Rig veya Spectator kamera aktive eder.
+    /// Oyuncu room'a girdiginde PlayerType'a gore VR Rig ayarlarini yapar.
     /// VR Rigler sahnede kano koltuguna child olarak hazir bekler.
-    /// Bu script sadece dogru rig'i aktive/deaktive eder.
+    /// Local player: XR tracking + kamera aktif
+    /// Remote player: Sadece gorseller aktif (paddle gorunur)
     /// </summary>
     public class PlayerSpawner : MonoBehaviourPunCallbacks
     {
@@ -25,18 +26,22 @@ namespace VRCanoe.VRPlayer
         [SerializeField] private GameObject spectatorCamera;
 
         [Header("Ayarlar")]
-        [Tooltip("Baslangicta tum rigleri deaktif et")]
-        [SerializeField] private bool disableAllOnStart = true;
+        [Tooltip("Baslangicta tum rigleri remote moda al")]
+        [SerializeField] private bool setupOnStart = true;
 
         [Header("Debug")]
         [SerializeField] private bool showDebugInfo = true;
 
-        // Aktif rig
-        private GameObject _activeRig;
+        // Aktif local rig
+        private GameObject _activeLocalRig;
+
+        // VRRigController referanslari
+        private VRRigController _player1RigController;
+        private VRRigController _player2RigController;
 
         // Properties
-        public GameObject ActiveRig => _activeRig;
-        public bool IsLocalPlayerActive => _activeRig != null && _activeRig.activeInHierarchy;
+        public GameObject ActiveRig => _activeLocalRig;
+        public bool IsLocalPlayerActive => _activeLocalRig != null && _activeLocalRig.activeInHierarchy;
 
         private void Awake()
         {
@@ -46,14 +51,17 @@ namespace VRCanoe.VRPlayer
                 return;
             }
             Instance = this;
+
+            // VRRigController referanslarini al
+            CacheRigControllers();
         }
 
         private void Start()
         {
-            // Baslangicta tum rigleri deaktif et
-            if (disableAllOnStart)
+            // Baslangicta tum rigleri remote moda al (gorseller acik, tracking kapali)
+            if (setupOnStart)
             {
-                DisableAllRigs();
+                SetupAllRigsAsRemote();
             }
 
             // NetworkManager event'lerini dinle
@@ -62,7 +70,7 @@ namespace VRCanoe.VRPlayer
                 NetworkManager.Instance.OnJoinedRoomEvent += OnLocalPlayerJoinedRoom;
             }
 
-            // Eger zaten room'daysak aktive et
+            // Eger zaten room'daysak ayarla
             if (PhotonNetwork.InRoom)
             {
                 OnLocalPlayerJoinedRoom();
@@ -78,13 +86,64 @@ namespace VRCanoe.VRPlayer
         }
 
         /// <summary>
-        /// Tum rigleri deaktif et.
+        /// VRRigController referanslarini cache'le.
         /// </summary>
-        private void DisableAllRigs()
+        private void CacheRigControllers()
         {
-            if (player1VRRig != null) player1VRRig.SetActive(false);
-            if (player2VRRig != null) player2VRRig.SetActive(false);
-            if (spectatorCamera != null) spectatorCamera.SetActive(false);
+            if (player1VRRig != null)
+            {
+                _player1RigController = player1VRRig.GetComponent<VRRigController>();
+                if (_player1RigController == null)
+                {
+                    Debug.LogWarning("[PlayerSpawner] Player1 VR Rig'de VRRigController bulunamadi!");
+                }
+            }
+
+            if (player2VRRig != null)
+            {
+                _player2RigController = player2VRRig.GetComponent<VRRigController>();
+                if (_player2RigController == null)
+                {
+                    Debug.LogWarning("[PlayerSpawner] Player2 VR Rig'de VRRigController bulunamadi!");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tum VR rigleri remote moda al (gorseller acik, tracking kapali).
+        /// Spectator kamerayi kapat.
+        /// </summary>
+        private void SetupAllRigsAsRemote()
+        {
+            // Her iki VR rig'i de aktif yap ve remote moda al
+            if (player1VRRig != null)
+            {
+                player1VRRig.SetActive(true);
+                if (_player1RigController != null)
+                {
+                    _player1RigController.SetAsRemotePlayer();
+                }
+            }
+
+            if (player2VRRig != null)
+            {
+                player2VRRig.SetActive(true);
+                if (_player2RigController != null)
+                {
+                    _player2RigController.SetAsRemotePlayer();
+                }
+            }
+
+            // Spectator kamera kapali
+            if (spectatorCamera != null)
+            {
+                spectatorCamera.SetActive(false);
+            }
+
+            if (showDebugInfo)
+            {
+                Debug.Log("[PlayerSpawner] Tum VR Rigler remote moda alindi (gorseller aktif)");
+            }
         }
 
         /// <summary>
@@ -101,76 +160,121 @@ namespace VRCanoe.VRPlayer
                 Debug.Log($"[PlayerSpawner] Local oyuncu tipi: {localType}");
             }
 
-            ActivateRigForPlayerType(localType);
+            SetupRigsForPlayerType(localType);
         }
 
         /// <summary>
-        /// Oyuncu tipine gore uygun rig'i aktive et.
+        /// Oyuncu tipine gore rigleri ayarla.
+        /// Local player'in rig'i tam aktif, diger rig remote modda (sadece gorseller).
         /// </summary>
-        public void ActivateRigForPlayerType(PlayerType playerType)
+        public void SetupRigsForPlayerType(PlayerType playerType)
         {
-            // Onceki aktif rig'i deaktif et
-            if (_activeRig != null)
+            // Onceki local rig'i remote moda al
+            if (_activeLocalRig != null)
             {
-                _activeRig.SetActive(false);
-                _activeRig = null;
+                var prevController = _activeLocalRig.GetComponent<VRRigController>();
+                if (prevController != null)
+                {
+                    prevController.SetAsRemotePlayer();
+                }
+                _activeLocalRig = null;
             }
 
             switch (playerType)
             {
                 case PlayerType.Player1:
-                    ActivateRig(player1VRRig, "Player1 VR Rig");
+                    SetupAsLocalPlayer(player1VRRig, _player1RigController, "Player1");
+                    SetupAsRemotePlayer(player2VRRig, _player2RigController, "Player2");
+                    if (spectatorCamera != null) spectatorCamera.SetActive(false);
                     break;
 
                 case PlayerType.Player2:
-                    ActivateRig(player2VRRig, "Player2 VR Rig");
+                    SetupAsLocalPlayer(player2VRRig, _player2RigController, "Player2");
+                    SetupAsRemotePlayer(player1VRRig, _player1RigController, "Player1");
+                    if (spectatorCamera != null) spectatorCamera.SetActive(false);
                     break;
 
                 case PlayerType.Spectator:
-                    ActivateRig(spectatorCamera, "Spectator Camera");
+                    // Spectator: her iki VR rig de remote modda, spectator kamera aktif
+                    SetupAsRemotePlayer(player1VRRig, _player1RigController, "Player1");
+                    SetupAsRemotePlayer(player2VRRig, _player2RigController, "Player2");
+                    if (spectatorCamera != null)
+                    {
+                        spectatorCamera.SetActive(true);
+                        _activeLocalRig = spectatorCamera;
+                        if (showDebugInfo)
+                        {
+                            Debug.Log("[PlayerSpawner] Spectator Camera aktive edildi");
+                        }
+                    }
                     break;
             }
         }
 
         /// <summary>
-        /// Belirtilen rig'i aktive et.
+        /// Rig'i local player olarak ayarla (tam aktif).
         /// </summary>
-        private void ActivateRig(GameObject rig, string rigName)
+        private void SetupAsLocalPlayer(GameObject rig, VRRigController controller, string playerName)
         {
             if (rig == null)
             {
-                Debug.LogError($"[PlayerSpawner] {rigName} referansi eksik!");
+                Debug.LogError($"[PlayerSpawner] {playerName} VR Rig referansi eksik!");
                 return;
             }
 
-            _activeRig = rig;
             rig.SetActive(true);
+            _activeLocalRig = rig;
+
+            if (controller != null)
+            {
+                controller.SetAsLocalPlayer();
+            }
 
             if (showDebugInfo)
             {
-                Debug.Log($"[PlayerSpawner] {rigName} aktive edildi");
+                Debug.Log($"[PlayerSpawner] {playerName} VR Rig LOCAL olarak ayarlandi");
             }
         }
 
         /// <summary>
-        /// Oyuncu tipini degistir ve rig'i guncelle.
+        /// Rig'i remote player olarak ayarla (sadece gorseller aktif).
+        /// </summary>
+        private void SetupAsRemotePlayer(GameObject rig, VRRigController controller, string playerName)
+        {
+            if (rig == null) return;
+
+            rig.SetActive(true);
+
+            if (controller != null)
+            {
+                controller.SetAsRemotePlayer();
+            }
+
+            if (showDebugInfo)
+            {
+                Debug.Log($"[PlayerSpawner] {playerName} VR Rig REMOTE olarak ayarlandi (gorseller aktif)");
+            }
+        }
+
+        /// <summary>
+        /// Oyuncu tipini degistir ve rigleri guncelle.
         /// </summary>
         public void ChangePlayerType(PlayerType newType)
         {
             if (NetworkManager.Instance != null)
             {
                 NetworkManager.Instance.SetPlayerType(newType);
-                ActivateRigForPlayerType(newType);
+                SetupRigsForPlayerType(newType);
             }
         }
 
         /// <summary>
-        /// Aktif VR Rig'deki VRRigController'i al (varsa).
+        /// Aktif local VR Rig'deki VRRigController'i al (varsa).
         /// </summary>
         public VRRigController GetActiveRigController()
         {
-            if (_activeRig == null) return null;
-            return _activeRig.GetComponent<VRRigController>();
+            if (_activeLocalRig == null) return null;
+            return _activeLocalRig.GetComponent<VRRigController>();
         }
 
         /// <summary>
@@ -189,19 +293,31 @@ namespace VRCanoe.VRPlayer
         private void OnGUI()
         {
             if (!showDebugInfo || !Application.isPlaying) return;
-            if (Game.CanoeGameManager.Instance != null) // DebugUIManager kullanilabilir
+            if (Game.CanoeGameManager.Instance != null)
             {
                 if (UI.DebugUIManager.Instance != null && !UI.DebugUIManager.Instance.ShowPlayerSpawnerDebug) return;
             }
 
-            GUILayout.BeginArea(new Rect(10, 120, 200, 80));
+            GUILayout.BeginArea(new Rect(10, 120, 250, 120));
             GUILayout.Box("Player Spawner");
-            GUILayout.Label($"Active Rig: {(_activeRig != null ? _activeRig.name : "None")}");
+            GUILayout.Label($"Local Rig: {(_activeLocalRig != null ? _activeLocalRig.name : "None")}");
 
             if (NetworkManager.Instance != null)
             {
                 GUILayout.Label($"Player Type: {NetworkManager.Instance.LocalPlayerType}");
             }
+
+            // Rig durumlarini goster
+            string p1Status = _player1RigController != null
+                ? (_player1RigController.IsLocalPlayer ? "LOCAL" : "REMOTE")
+                : "N/A";
+            string p2Status = _player2RigController != null
+                ? (_player2RigController.IsLocalPlayer ? "LOCAL" : "REMOTE")
+                : "N/A";
+
+            GUILayout.Label($"Player1 Rig: {p1Status}");
+            GUILayout.Label($"Player2 Rig: {p2Status}");
+
             GUILayout.EndArea();
         }
 #endif

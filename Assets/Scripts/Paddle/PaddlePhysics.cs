@@ -46,8 +46,37 @@ namespace VRCanoe.Paddle
         [SerializeField] private float hapticAmplitude = 0.2f;
         [SerializeField] private float hapticDuration = 0.05f;
 
+        [Header("Ses Ayarlari")]
+        [Tooltip("Ses efektlerini aktif et")]
+        [SerializeField] private bool enableSounds = true;
+
+        [Tooltip("AudioSource (bos birak = otomatik olustur)")]
+        [SerializeField] private AudioSource audioSource;
+
+        [Tooltip("Suya giris sesi")]
+        [SerializeField] private AudioClip waterEnterSound;
+
+        [Tooltip("Kurek cekme sesi (loop)")]
+        [SerializeField] private AudioClip paddlingSound;
+
+        [Tooltip("Kurek cekme sesi minimum hiz")]
+        [SerializeField] private float paddlingSoundMinVelocity = 0.5f;
+
+        [Tooltip("Kurek cekme sesi volume (hiza gore)")]
+        [SerializeField] private float paddlingSoundMaxVolume = 0.8f;
+
+        [Tooltip("Suya giris sesi volume")]
+        [SerializeField] private float waterEnterVolume = 0.5f;
+
+        [Tooltip("Ses pitch varyasyonu")]
+        [SerializeField] private float pitchVariation = 0.1f;
+
         [Header("Debug")]
         [SerializeField] private bool showDebugInfo = true;
+
+        // Ses state
+        private bool _isPaddlingSoundPlaying;
+        private float _targetPaddlingVolume;
 
         // Components
         private PaddleController _paddleController;
@@ -82,6 +111,27 @@ namespace VRCanoe.Paddle
         {
             FindCanoe();
             InitializeLocalPositions();
+            SetupAudioSource();
+        }
+
+        /// <summary>
+        /// AudioSource olustur veya ayarla.
+        /// </summary>
+        private void SetupAudioSource()
+        {
+            if (!enableSounds) return;
+
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+            }
+
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 1f; // 3D ses
+            audioSource.rolloffMode = AudioRolloffMode.Linear;
+            audioSource.minDistance = 0.5f;
+            audioSource.maxDistance = 10f;
+            audioSource.volume = 0f;
         }
 
         private void FindCanoe()
@@ -125,6 +175,97 @@ namespace VRCanoe.Paddle
             // Her iki ucu da kontrol et
             UpdateTip1();
             UpdateTip2();
+
+            // Kurek cekme sesini guncelle
+            UpdatePaddlingSound();
+        }
+
+        private void Update()
+        {
+            // Ses volume'unu smooth guncelle
+            SmoothUpdateAudioVolume();
+        }
+
+        /// <summary>
+        /// Kurek cekme sesini kontrol et.
+        /// </summary>
+        private void UpdatePaddlingSound()
+        {
+            if (!enableSounds || audioSource == null || paddlingSound == null) return;
+
+            // Herhangi bir tip suda ve hareket ediyorsa ses cal
+            bool shouldPlaySound = false;
+            float maxVelocity = 0f;
+
+            if (_tip1InWater && _tip1RelativeVelocity.magnitude > paddlingSoundMinVelocity)
+            {
+                shouldPlaySound = true;
+                maxVelocity = Mathf.Max(maxVelocity, _tip1RelativeVelocity.magnitude);
+            }
+
+            if (_tip2InWater && _tip2RelativeVelocity.magnitude > paddlingSoundMinVelocity)
+            {
+                shouldPlaySound = true;
+                maxVelocity = Mathf.Max(maxVelocity, _tip2RelativeVelocity.magnitude);
+            }
+
+            if (shouldPlaySound)
+            {
+                // Volume hiza gore ayarla
+                _targetPaddlingVolume = Mathf.Lerp(0.1f, paddlingSoundMaxVolume,
+                    Mathf.Clamp01((maxVelocity - paddlingSoundMinVelocity) / 2f));
+
+                // Ses baslamadiysa baslat
+                if (!_isPaddlingSoundPlaying)
+                {
+                    StartPaddlingSound();
+                }
+            }
+            else
+            {
+                // Ses durdur
+                _targetPaddlingVolume = 0f;
+
+                if (_isPaddlingSoundPlaying && audioSource.volume < 0.01f)
+                {
+                    StopPaddlingSound();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ses volume'unu smooth olarak guncelle.
+        /// </summary>
+        private void SmoothUpdateAudioVolume()
+        {
+            if (audioSource == null) return;
+
+            audioSource.volume = Mathf.Lerp(audioSource.volume, _targetPaddlingVolume, Time.deltaTime * 10f);
+        }
+
+        /// <summary>
+        /// Kurek cekme sesini baslat.
+        /// </summary>
+        private void StartPaddlingSound()
+        {
+            if (audioSource == null || paddlingSound == null) return;
+
+            audioSource.clip = paddlingSound;
+            audioSource.loop = true;
+            audioSource.pitch = 1f + Random.Range(-pitchVariation, pitchVariation);
+            audioSource.Play();
+            _isPaddlingSoundPlaying = true;
+        }
+
+        /// <summary>
+        /// Kurek cekme sesini durdur.
+        /// </summary>
+        private void StopPaddlingSound()
+        {
+            if (audioSource == null) return;
+
+            audioSource.Stop();
+            _isPaddlingSoundPlaying = false;
         }
 
         #region Tip 1
@@ -271,10 +412,25 @@ namespace VRCanoe.Paddle
                 Debug.Log($"[PaddlePhysics] Tip{tipIndex} suya girdi");
             }
 
+            // Haptic feedback
             if (enableHaptics && _paddleController != null)
             {
                 _paddleController.SendHapticFeedback(0.1f, 0.02f);
             }
+
+            // Suya giris sesi
+            PlayWaterEnterSound();
+        }
+
+        /// <summary>
+        /// Suya giris sesini cal.
+        /// </summary>
+        private void PlayWaterEnterSound()
+        {
+            if (!enableSounds || audioSource == null || waterEnterSound == null) return;
+
+            // OneShot olarak cal (loop olan sesi kesmeden)
+            audioSource.PlayOneShot(waterEnterSound, waterEnterVolume);
         }
 
         #endregion
