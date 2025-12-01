@@ -19559,7 +19559,7 @@ MonoBehaviour:
   m_Camera: {fileID: 1676324140}
   m_OriginBaseGameObject: {fileID: 863085345}
   m_CameraFloorOffsetObject: {fileID: 1860727660}
-  m_RequestedTrackingOriginMode: 0
+  m_RequestedTrackingOriginMode: 1
   m_CameraYOffset: 1.36144
 --- !u!1 &869010192
 GameObject:
@@ -22990,7 +22990,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   waterLevel: 0
-  floatHeight: 0
+  floatHeight: -0.36
   floatDamping: 2
   stabilizationSpeed: 5
   maxTiltAngle: 5
@@ -23009,7 +23009,7 @@ Transform:
   m_GameObject: {fileID: 1038429166}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.9659252, z: -0, w: 0.25882143}
-  m_LocalPosition: {x: 741.87427, y: 0, z: 1037.874}
+  m_LocalPosition: {x: 741.87427, y: -0.344, z: 1037.874}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -31742,7 +31742,7 @@ MonoBehaviour:
   m_Camera: {fileID: 232748222}
   m_OriginBaseGameObject: {fileID: 1353314042}
   m_CameraFloorOffsetObject: {fileID: 1667551777}
-  m_RequestedTrackingOriginMode: 0
+  m_RequestedTrackingOriginMode: 1
   m_CameraYOffset: 1.36144
 --- !u!1 &1358727155
 GameObject:

@@ -157,7 +157,7 @@ namespace VRCanoe.Game
             {
                 EmergencyStop();
             }
-            else if (Input.GetKeyDown(KeyCode.R))
+            else if (Input.GetKeyDown(KeyCode.F3))
             {
                 ReloadSceneForAll();
             }
